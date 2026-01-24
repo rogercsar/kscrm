@@ -1,0 +1,19 @@
+# Logic
+node_modules
+dist
+build
+.env
+*.local
+
+# Editor
+.vscode
+.idea
+*.suo
+*.ntvs
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+.DS_Store
+Thumbs.db
