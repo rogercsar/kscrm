@@ -158,9 +158,13 @@ function AuthScreen() {
     )
 }
 
+import { DashboardCharts } from '@/components/DashboardCharts'
+// ... imports
+
 export default function Dashboard() {
     const [session, setSession] = useState<any>(null)
     const [panels, setPanels] = useState<Panel[]>([])
+    const [allLeads, setAllLeads] = useState<any[]>([]) // Leads for analytics
     const [loading, setLoading] = useState(true)
 
     // Management State
@@ -171,7 +175,7 @@ export default function Dashboard() {
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session)
-            if (session) fetchPanels()
+            if (session) fetchDashboardData()
             else setLoading(false)
         })
 
@@ -179,21 +183,32 @@ export default function Dashboard() {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session)
-            if (session) fetchPanels()
-            else setPanels([])
+            if (session) fetchDashboardData()
+            else {
+                setPanels([])
+                setAllLeads([])
+            }
         })
 
         return () => subscription.unsubscribe()
     }, [])
 
-    const fetchPanels = async () => {
+    const fetchDashboardData = async () => {
         setLoading(true)
-        const { data } = await supabase
+
+        // Fetch Panels
+        const { data: panelsData } = await supabase
             .from('panels')
             .select('*')
             .order('created_at', { ascending: false })
 
-        setPanels(data || [])
+        // Fetch ALL Leads for Analytics
+        const { data: leadsData } = await supabase
+            .from('leads')
+            .select('*')
+
+        setPanels(panelsData || [])
+        setAllLeads(leadsData || [])
         setLoading(false)
     }
 
@@ -296,9 +311,12 @@ export default function Dashboard() {
 
             {/* Main Content */}
             <main className="container px-4 py-8 print:py-0">
+                {/* Global Analytics Dashboard */}
+                {!loading && allLeads.length > 0 && <DashboardCharts leads={allLeads} />}
+
                 <div className="flex justify-between items-center mb-8 print:hidden">
                     <h2 className="text-xl font-semibold">Seus Painéis</h2>
-                    <CreatePanelModal onPanelCreated={fetchPanels} />
+                    <CreatePanelModal onPanelCreated={fetchDashboardData} />
                 </div>
 
                 {/* Print Title */}
@@ -317,7 +335,7 @@ export default function Dashboard() {
                         <p className="text-sm text-muted-foreground mb-4">
                             Crie seu primeiro painel para começar a gerenciar leads.
                         </p>
-                        <CreatePanelModal onPanelCreated={fetchPanels} />
+                        <CreatePanelModal onPanelCreated={fetchDashboardData} />
                     </div>
                 ) : (
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 print:grid-cols-2">
