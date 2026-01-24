@@ -85,9 +85,9 @@ export function DashboardCharts({ leads }: DashboardChartsProps) {
             </div>
 
             {/* Charts Row */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
                 {/* Bar Chart - 4 cols */}
-                <Card className="col-span-4">
+                <Card className="col-span-1 lg:col-span-4">
                     <CardHeader>
                         <CardTitle>Funil de Vendas</CardTitle>
                     </CardHeader>
@@ -124,7 +124,7 @@ export function DashboardCharts({ leads }: DashboardChartsProps) {
                 </Card>
 
                 {/* Pie Chart - 3 cols */}
-                <Card className="col-span-3">
+                <Card className="col-span-1 lg:col-span-3">
                     <CardHeader>
                         <CardTitle>Visão Geral</CardTitle>
                     </CardHeader>

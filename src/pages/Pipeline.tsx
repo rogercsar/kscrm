@@ -297,30 +297,35 @@ export default function Pipeline() {
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col">
             <header className="border-b bg-card print:hidden">
-                <div className="container flex h-16 items-center px-4 gap-4">
-                    <Link to="/">
-                        <Button variant="ghost" size="icon">
-                            <ArrowLeft className="h-5 w-5" />
-                        </Button>
-                    </Link>
-                    <div className="flex-1">
-                        <h1 className="text-lg font-semibold">{panel?.name}</h1>
-                        <p className="text-xs text-muted-foreground">{leads.length} leads no total</p>
+                <div className="container flex flex-col sm:flex-row min-h-16 items-center px-4 gap-4 py-2 sm:py-0">
+                    <div className="flex w-full sm:w-auto items-center">
+                        <Link to="/">
+                            <Button variant="ghost" size="icon">
+                                <ArrowLeft className="h-5 w-5" />
+                            </Button>
+                        </Link>
+                        <div className="flex-1 ml-2">
+                            <h1 className="text-lg font-semibold truncate leading-tight">{panel?.name}</h1>
+                            <p className="text-xs text-muted-foreground">{leads.length} leads</p>
+                        </div>
                     </div>
-                    <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={handleImportClick} title="Importar CSV">
+
+                    <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 justify-end">
+                        <Button variant="outline" size="sm" onClick={handleImportClick} title="Importar CSV" className="whitespace-nowrap">
                             <Upload className="h-4 w-4 mr-2" />
                             <span className="hidden sm:inline">Importar</span>
+                            <span className="inline sm:hidden">Imp.</span>
                         </Button>
-                        <Button variant="outline" size="sm" onClick={handleExport} title="Exportar CSV">
+                        <Button variant="outline" size="sm" onClick={handleExport} title="Exportar CSV" className="whitespace-nowrap">
                             <Download className="h-4 w-4 mr-2" />
                             <span className="hidden sm:inline">Exportar</span>
+                            <span className="inline sm:hidden">Exp.</span>
                         </Button>
-                        <Button variant="outline" size="sm" onClick={handlePrint} title="Imprimir">
+                        <Button variant="outline" size="sm" onClick={handlePrint} title="Imprimir" className="whitespace-nowrap hidden sm:flex">
                             <Printer className="h-4 w-4 mr-2" />
                             <span className="hidden sm:inline">Imprimir</span>
                         </Button>
-                        <Button variant="destructive" size="sm" onClick={handleDeletePanel} title="Excluir Painel">
+                        <Button variant="destructive" size="sm" onClick={handleDeletePanel} title="Excluir Painel" className="whitespace-nowrap">
                             <Trash2 className="h-4 w-4 mr-2" />
                             <span className="hidden sm:inline">Remover</span>
                         </Button>
@@ -331,28 +336,30 @@ export default function Pipeline() {
 
             <main className="flex-1 container px-4 py-6 overflow-hidden flex flex-col print:overflow-visible print:h-auto">
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as LeadStatus)} className="flex-1 flex flex-col print:block">
-                    <TabsList className="grid w-full grid-cols-5 mb-4 h-auto print:hidden">
-                        <TabsTrigger value="cold" className="text-xs sm:text-sm flex py-3 flex-col sm:flex-row gap-1">
-                            <span>Frios</span>
-                            <Badge variant="secondary" className="ml-1 text-[10px] h-5 px-1.5">{counts.cold}</Badge>
-                        </TabsTrigger>
-                        <TabsTrigger value="interested" className="text-xs sm:text-sm flex py-3 flex-col sm:flex-row gap-1">
-                            <span>Interessados</span>
-                            <Badge variant="secondary" className="ml-1 text-[10px] h-5 px-1.5">{counts.interested}</Badge>
-                        </TabsTrigger>
-                        <TabsTrigger value="scheduled" className="text-xs sm:text-sm flex py-3 flex-col sm:flex-row gap-1">
-                            <span>Agendados</span>
-                            <Badge variant="secondary" className="ml-1 text-[10px] h-5 px-1.5">{counts.scheduled}</Badge>
-                        </TabsTrigger>
-                        <TabsTrigger value="closed" className="text-xs sm:text-sm flex py-3 flex-col sm:flex-row gap-1">
-                            <span>Fechados</span>
-                            <Badge variant="secondary" className="ml-1 text-[10px] h-5 px-1.5">{counts.closed}</Badge>
-                        </TabsTrigger>
-                        <TabsTrigger value="lost" className="text-xs sm:text-sm flex py-3 flex-col sm:flex-row gap-1">
-                            <span>Perdidos</span>
-                            <Badge variant="secondary" className="ml-1 text-[10px] h-5 px-1.5">{counts.lost}</Badge>
-                        </TabsTrigger>
-                    </TabsList>
+                    <div className="w-full overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+                        <TabsList className="min-w-full w-max flex h-auto p-1 print:hidden gap-1 bg-muted/50">
+                            <TabsTrigger value="cold" className="flex-1 min-w-[100px] flex py-2 flex-col gap-1 items-center data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                                <span className="text-xs font-semibold">Frios</span>
+                                <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{counts.cold}</Badge>
+                            </TabsTrigger>
+                            <TabsTrigger value="interested" className="flex-1 min-w-[100px] flex py-2 flex-col gap-1 items-center data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                                <span className="text-xs font-semibold">Interesse</span>
+                                <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{counts.interested}</Badge>
+                            </TabsTrigger>
+                            <TabsTrigger value="scheduled" className="flex-1 min-w-[100px] flex py-2 flex-col gap-1 items-center data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                                <span className="text-xs font-semibold">Agendados</span>
+                                <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{counts.scheduled}</Badge>
+                            </TabsTrigger>
+                            <TabsTrigger value="closed" className="flex-1 min-w-[100px] flex py-2 flex-col gap-1 items-center data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                                <span className="text-xs font-semibold">Fechados</span>
+                                <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{counts.closed}</Badge>
+                            </TabsTrigger>
+                            <TabsTrigger value="lost" className="flex-1 min-w-[100px] flex py-2 flex-col gap-1 items-center data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                                <span className="text-xs font-semibold">Perdidos</span>
+                                <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{counts.lost}</Badge>
+                            </TabsTrigger>
+                        </TabsList>
+                    </div>
 
                     {/* Print Header Visualization */}
                     <div className="hidden print:block mb-4">
