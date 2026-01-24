@@ -24,3 +24,10 @@ export type Lead = {
     lost_reason: string | null
     created_at: string
 }
+
+export type LeadNote = {
+    id: string
+    lead_id: string
+    content: string
+    created_at: string
+}

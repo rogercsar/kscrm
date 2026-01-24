@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
-import { Panel, Lead, LeadStatus } from '@/types'
-import { Loader2, ArrowLeft, Calendar, CheckCircle, XCircle, Trash2, Download, Printer, Upload } from 'lucide-react'
+import { Panel, Lead, LeadStatus, LeadNote } from '@/types'
+import { Loader2, ArrowLeft, Calendar, CheckCircle, XCircle, Trash2, Download, Printer, Upload, Search, MessageCircle, History, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent } from '@/components/ui/card'
@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UserNav } from '@/components/UserNav'
+import { Textarea } from '@/components/ui/textarea'
 
 export default function Pipeline() {
     const { id } = useParams<{ id: string }>()
@@ -22,10 +23,17 @@ export default function Pipeline() {
     const [leads, setLeads] = useState<Lead[]>([])
     const [loading, setLoading] = useState(true)
     const [activeTab, setActiveTab] = useState<LeadStatus>('cold')
+    const [searchQuery, setSearchQuery] = useState('')
 
     const [dialogOpen, setDialogOpen] = useState(false)
     const [actionType, setActionType] = useState<'schedule' | 'close' | 'lost' | 'reschedule' | null>(null)
     const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
+
+    // Notes State
+    const [notesDialogOpen, setNotesDialogOpen] = useState(false)
+    const [currentNotes, setCurrentNotes] = useState<LeadNote[]>([])
+    const [newNote, setNewNote] = useState('')
+    const [loadingNotes, setLoadingNotes] = useState(false)
 
     // Form States
     const [lostReason, setLostReason] = useState('')
@@ -258,8 +266,56 @@ export default function Pipeline() {
         }
     }
 
+    const handleOpenNotes = async (lead: Lead) => {
+        setSelectedLead(lead)
+        setNotesDialogOpen(true)
+        setLoadingNotes(true)
+
+        const { data } = await supabase
+            .from('lead_notes')
+            .select('*')
+            .eq('lead_id', lead.id)
+            .order('created_at', { ascending: false })
+
+        setCurrentNotes(data || [])
+        setLoadingNotes(false)
+    }
+
+    const handleSaveNote = async () => {
+        if (!selectedLead || !newNote.trim()) return
+
+        const note = {
+            lead_id: selectedLead.id,
+            content: newNote
+        }
+
+        const { data, error } = await supabase
+            .from('lead_notes')
+            .insert(note)
+            .select()
+            .single()
+
+        if (!error && data) {
+            setCurrentNotes([data, ...currentNotes])
+            setNewNote('')
+        } else {
+            alert('Erro ao salvar nota')
+        }
+    }
+
     // Filter and Sort leads
     let filteredLeads = leads.filter(l => l.status === activeTab)
+
+    if (searchQuery) {
+        const lowerQuery = searchQuery.toLowerCase()
+        filteredLeads = filteredLeads.filter(l => {
+            // Search in original_data values
+            const inData = Object.values(l.original_data).some(val =>
+                String(val).toLowerCase().includes(lowerQuery)
+            )
+            return inData
+        })
+    }
 
     if (activeTab === 'scheduled') {
         filteredLeads = filteredLeads.sort((a, b) => {
@@ -304,10 +360,22 @@ export default function Pipeline() {
                                 <ArrowLeft className="h-5 w-5" />
                             </Button>
                         </Link>
-                        <div className="flex-1 ml-2">
+                        <div className="flex-1 ml-2 mr-4">
                             <h1 className="text-lg font-semibold truncate leading-tight">{panel?.name}</h1>
                             <p className="text-xs text-muted-foreground">{leads.length} leads</p>
                         </div>
+                    </div>
+
+                    {/* Search Bar */}
+                    <div className="flex-1 w-full sm:max-w-xs relative my-2 sm:my-0">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            type="search"
+                            placeholder="Buscar leads..."
+                            className="pl-8 w-full bg-background"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
                     </div>
 
                     <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 justify-end">
@@ -420,14 +488,47 @@ export default function Pipeline() {
                                                         )}
                                                     </div>
 
-                                                    <div className="flex justify-end w-full gap-2 pt-2 print:hidden">
+                                                    <div className="flex justify-end w-full gap-2 pt-2 print:hidden flex-wrap">
+                                                        {/* WhatsApp Smart Button */}
+                                                        {(() => {
+                                                            const phoneKey = Object.keys(lead.original_data).find(k =>
+                                                                ['tele', 'cel', 'phone', 'whatsapp', 'whats'].some(term => k.toLowerCase().includes(term))
+                                                            )
+                                                            const phone = phoneKey ? lead.original_data[phoneKey] : null
+
+                                                            if (phone) {
+                                                                return (
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="outline"
+                                                                        className="text-green-600 border-green-600 hover:bg-green-50"
+                                                                        onClick={() => {
+                                                                            const cleanPhone = String(phone).replace(/\D/g, '')
+                                                                            window.open(`https://wa.me/55${cleanPhone}`, '_blank')
+                                                                        }}
+                                                                        title="Chamar no WhatsApp"
+                                                                    >
+                                                                        <MessageCircle className="h-4 w-4 mr-2" />
+                                                                        WhatsApp
+                                                                    </Button>
+                                                                )
+                                                            }
+                                                            return null
+                                                        })()}
+
+                                                        <Button size="sm" variant="outline" onClick={() => handleOpenNotes(lead)} title="Ver Histórico">
+                                                            <History className="h-4 w-4 mr-2" />
+                                                            Histórico
+                                                        </Button>
+
+
                                                         {activeTab === 'cold' && (
-                                                            <div className="flex gap-2 w-full sm:w-auto">
-                                                                <Button variant="destructive" size="sm" className="flex-1 sm:flex-none" onClick={() => handleQuickLost(lead.id)}>
-                                                                    <XCircle className="mr-2 h-4 w-4" />
+                                                            <div className="flex gap-2 flex-wrap">
+                                                                <Button variant="destructive" size="sm" onClick={() => handleQuickLost(lead.id)}>
+                                                                    <XCircle className="h-4 w-4 mr-2" />
                                                                     Desinteressado
                                                                 </Button>
-                                                                <Button size="sm" className="flex-1 sm:flex-none" onClick={() => simpleUpdateStatus(lead.id, 'interested')}>
+                                                                <Button size="sm" onClick={() => simpleUpdateStatus(lead.id, 'interested')}>
                                                                     Marcar como Interessado
                                                                 </Button>
                                                             </div>
@@ -436,7 +537,6 @@ export default function Pipeline() {
                                                         {activeTab === 'interested' && (
                                                             <Button
                                                                 size="sm"
-                                                                className="w-full sm:w-auto"
                                                                 onClick={() => openActionDialog(lead, 'schedule')}
                                                             >
                                                                 <Calendar className="mr-2 h-4 w-4" />
@@ -445,15 +545,15 @@ export default function Pipeline() {
                                                         )}
 
                                                         {activeTab === 'scheduled' && (
-                                                            <div className="flex flex-wrap gap-2 w-full sm:justify-end">
-                                                                <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => openActionDialog(lead, 'reschedule')}>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                <Button variant="outline" size="sm" onClick={() => openActionDialog(lead, 'reschedule')}>
                                                                     Reagendar
                                                                 </Button>
-                                                                <Button variant="destructive" size="sm" className="flex-1 sm:flex-none" onClick={() => openActionDialog(lead, 'lost')}>
+                                                                <Button variant="destructive" size="sm" onClick={() => openActionDialog(lead, 'lost')}>
                                                                     <XCircle className="mr-2 h-4 w-4" />
                                                                     Perdido
                                                                 </Button>
-                                                                <Button size="sm" className="flex-1 sm:flex-none" onClick={() => openActionDialog(lead, 'close')}>
+                                                                <Button size="sm" onClick={() => openActionDialog(lead, 'close')}>
                                                                     <CheckCircle className="mr-2 h-4 w-4" />
                                                                     Fechar Contrato
                                                                 </Button>
@@ -461,13 +561,13 @@ export default function Pipeline() {
                                                         )}
 
                                                         {activeTab === 'closed' && (
-                                                            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => openActionDialog(lead, 'reschedule')}>
+                                                            <Button variant="outline" size="sm" onClick={() => openActionDialog(lead, 'reschedule')}>
                                                                 Voltar para Agendamento
                                                             </Button>
                                                         )}
 
                                                         {activeTab === 'lost' && (
-                                                            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => openActionDialog(lead, 'reschedule')}>
+                                                            <Button variant="outline" size="sm" onClick={() => openActionDialog(lead, 'reschedule')}>
                                                                 Voltar para Agendamento
                                                             </Button>
                                                         )}
@@ -637,6 +737,54 @@ export default function Pipeline() {
                                 Importar {pendingImportData.length} Leads
                             </Button>
                         </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Notes / Timeline Dialog */}
+                <Dialog open={notesDialogOpen} onOpenChange={setNotesDialogOpen}>
+                    <DialogContent className="sm:max-w-lg h-[80vh] flex flex-col">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center">
+                                <History className="mr-2 h-5 w-5" />
+                                Histórico do Lead
+                            </DialogTitle>
+                            <DialogDescription>
+                                {(selectedLead?.original_data?.Nome || selectedLead?.original_data?.name || 'Lead') + ' - Anotações e registros'}
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="flex-1 overflow-hidden flex flex-col gap-4 mt-2">
+                            <ScrollArea className="flex-1 border rounded-md p-4 bg-muted/20">
+                                {loadingNotes ? (
+                                    <div className="flex justify-center p-4"><Loader2 className="animate-spin" /></div>
+                                ) : currentNotes.length === 0 ? (
+                                    <div className="text-center text-muted-foreground text-sm py-8">Nenhuma anotação ainda.</div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {currentNotes.map(note => (
+                                            <div key={note.id} className="bg-background border rounded p-3 text-sm">
+                                                <div className="mb-1 text-xs text-muted-foreground">
+                                                    {new Date(note.created_at).toLocaleString('pt-BR')}
+                                                </div>
+                                                <div className="whitespace-pre-wrap">{note.content}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </ScrollArea>
+
+                            <div className="flex gap-2 items-end">
+                                <Textarea
+                                    placeholder="Digite uma nova anotação..."
+                                    className="min-h-[80px]"
+                                    value={newNote}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewNote(e.target.value)}
+                                />
+                                <Button size="icon" onClick={handleSaveNote} disabled={!newNote.trim()}>
+                                    <Send className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
                     </DialogContent>
                 </Dialog>
             </main>
