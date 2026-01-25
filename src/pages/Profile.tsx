@@ -16,6 +16,7 @@ export default function Profile() {
 
     const [fullName, setFullName] = useState('')
     const [phone, setPhone] = useState('')
+    const [role, setRole] = useState('')
     const [avatarUrl, setAvatarUrl] = useState('')
     const [uploading, setUploading] = useState(false)
 
@@ -34,7 +35,7 @@ export default function Profile() {
 
             const { data, error, status } = await supabase
                 .from('profiles')
-                .select(`full_name, avatar_url, phone`)
+                .select(`full_name, avatar_url, phone, role`)
                 .eq('id', user.id)
                 .single()
 
@@ -46,6 +47,7 @@ export default function Profile() {
                 setFullName(data.full_name || '')
                 setAvatarUrl(data.avatar_url || '')
                 setPhone(data.phone || '')
+                setRole(data.role || '')
             }
         } catch (error) {
             console.error('Error loading profile:', error)
@@ -65,6 +67,7 @@ export default function Profile() {
                 full_name: fullName,
                 avatar_url: avatarUrl,
                 phone: phone,
+                role: role,
                 updated_at: new Date(),
             }
 
@@ -165,6 +168,16 @@ export default function Profile() {
                                 value={fullName}
                                 onChange={(e) => setFullName(e.target.value)}
                                 placeholder="Seu nome"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="role">Cargo</Label>
+                            <Input
+                                id="role"
+                                value={role}
+                                onChange={(e) => setRole(e.target.value)}
+                                placeholder="Ex: Vendedor, Gerente"
                             />
                         </div>
 

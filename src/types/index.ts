@@ -2,6 +2,7 @@ export type Profile = {
     id: string
     full_name: string | null
     avatar_url: string | null
+    role?: string | null
     updated_at: string | null
 }
 
@@ -22,6 +23,7 @@ export type Lead = {
     status: LeadStatus
     scheduled_date: string | null
     lost_reason: string | null
+    value?: number
     created_at: string
 }
 

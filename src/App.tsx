@@ -1,20 +1,26 @@
+
+
+
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Dashboard from './pages/Dashboard'
+import Panels from './pages/Panels'
 import Pipeline from './pages/Pipeline'
+import Financial from './pages/Financial'
 import Profile from './pages/Profile'
-import { Footer } from './components/Footer'
+import Layout from './components/Layout'
 
 function App() {
     return (
         <BrowserRouter>
-            <div className="flex flex-col min-h-screen">
-                <Routes>
+            <Routes>
+                <Route element={<Layout />}>
                     <Route path="/" element={<Dashboard />} />
+                    <Route path="/panels" element={<Panels />} />
+                    <Route path="/financial" element={<Financial />} />
                     <Route path="/pipeline/:id" element={<Pipeline />} />
                     <Route path="/profile" element={<Profile />} />
-                </Routes>
-                <Footer />
-            </div>
+                </Route>
+            </Routes>
         </BrowserRouter>
     )
 }

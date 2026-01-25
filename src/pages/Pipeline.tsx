@@ -39,11 +39,22 @@ export default function Pipeline() {
     const [lostReason, setLostReason] = useState('')
     const [scheduleDate, setScheduleDate] = useState('')
     const [closingDate, setClosingDate] = useState(new Date().toISOString().slice(0, 16)) // Default to now
-    const [responsible, setResponsible] = useState('Eu') // Default responsible
+    const [responsible, setResponsible] = useState('') // Default responsible
+    const [dealValue, setDealValue] = useState('') // Value state
+
+    const [allProfiles, setAllProfiles] = useState<any[]>([])
 
     useEffect(() => {
-        if (id) fetchPipelineData()
+        if (id) {
+            fetchPipelineData()
+            selectAllProfiles()
+        }
     }, [id])
+
+    const selectAllProfiles = async () => {
+        const { data } = await supabase.from('profiles').select('id, full_name, email, role')
+        if (data) setAllProfiles(data)
+    }
 
     const fetchPipelineData = async () => {
         setLoading(true)
@@ -68,6 +79,8 @@ export default function Pipeline() {
             setLoading(false)
         }
     }
+
+
 
     const handleDeletePanel = async () => {
         if (!panel) return
@@ -193,6 +206,7 @@ export default function Pipeline() {
 
         // Reset/Init forms
         setLostReason('')
+        setDealValue('')
         setScheduleDate(new Date().toISOString().slice(0, 16))
         if (type === 'reschedule' && lead.scheduled_date) {
             setScheduleDate(new Date(lead.scheduled_date).toISOString().slice(0, 16))
@@ -207,13 +221,17 @@ export default function Pipeline() {
 
         if (actionType === 'lost') {
             newStatus = 'lost'
-            updates = { lost_reason: lostReason }
+            updates = {
+                lost_reason: lostReason,
+                value: dealValue ? parseFloat(dealValue) : 0
+            }
         } else if (actionType === 'schedule' || actionType === 'reschedule') {
             newStatus = 'scheduled'
             updates = { scheduled_date: new Date(scheduleDate).toISOString() }
         } else if (actionType === 'close') {
             newStatus = 'closed'
             updates = {
+                value: dealValue ? parseFloat(dealValue) : 0,
                 original_data: {
                     ...selectedLead.original_data,
                     closing_date: closingDate,
@@ -355,7 +373,7 @@ export default function Pipeline() {
             <header className="border-b bg-card print:hidden">
                 <div className="container flex flex-col sm:flex-row min-h-16 items-center px-4 gap-4 py-2 sm:py-0">
                     <div className="flex w-full sm:w-auto items-center">
-                        <Link to="/">
+                        <Link to="/panels">
                             <Button variant="ghost" size="icon">
                                 <ArrowLeft className="h-5 w-5" />
                             </Button>
@@ -474,6 +492,11 @@ export default function Pipeline() {
                                                                     Fechado: {new Date(lead.original_data.closing_date).toLocaleString('pt-BR')}
                                                                 </div>
                                                             )}
+                                                            {(lead.status === 'closed' && lead.value) && (
+                                                                <div className="flex items-center text-green-700 font-bold bg-green-50 px-2 rounded border border-green-200">
+                                                                    R$ {lead.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                                </div>
+                                                            )}
                                                         </div>
 
                                                         {lead.lost_reason && (
@@ -481,11 +504,21 @@ export default function Pipeline() {
                                                                 <strong>Motivo da Perda:</strong> {lead.lost_reason}
                                                             </div>
                                                         )}
-                                                        {lead.original_data.responsible && (
-                                                            <div className="mt-1 text-xs text-muted-foreground">
-                                                                <strong>Responsável:</strong> {lead.original_data.responsible}
-                                                            </div>
-                                                        )}
+                                                        {lead.original_data.responsible && (() => {
+                                                            const respProfile = allProfiles.find(p => p.id === lead.original_data.responsible)
+                                                                || allProfiles.find(p => p.full_name === lead.original_data.responsible)
+
+                                                            return (
+                                                                <div className="mt-1 text-xs text-muted-foreground">
+                                                                    <strong>Responsável:</strong> {respProfile ? (
+                                                                        <>
+                                                                            {respProfile.full_name || respProfile.email || `Usuário (${respProfile.id.slice(0, 8)})`}
+                                                                            {respProfile.role && <span className="text-primary/80 ml-1">({respProfile.role})</span>}
+                                                                        </>
+                                                                    ) : lead.original_data.responsible}
+                                                                </div>
+                                                            )
+                                                        })()}
                                                     </div>
 
                                                     <div className="flex justify-end w-full gap-2 pt-2 print:hidden flex-wrap">
@@ -625,19 +658,31 @@ export default function Pipeline() {
 
                         <div className="py-4 space-y-4">
                             {actionType === 'lost' && (
-                                <div className="space-y-2">
-                                    <Label>Motivo</Label>
-                                    <Input
-                                        value={lostReason}
-                                        onChange={e => setLostReason(e.target.value)}
-                                        placeholder="Ex: Preço alto, Sem interesse, etc."
-                                    />
-                                    <div className="flex gap-2 mt-2">
-                                        {['Preço', 'Concorrente', 'Sem Contato', 'Timing'].map(r => (
-                                            <Badge key={r} variant="outline" className="cursor-pointer hover:bg-muted" onClick={() => setLostReason(r)}>
-                                                {r}
-                                            </Badge>
-                                        ))}
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label>Valor Perdido (R$)</Label>
+                                        <Input
+                                            type="number"
+                                            step="0.01"
+                                            placeholder="0,00"
+                                            value={dealValue}
+                                            onChange={e => setDealValue(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Motivo</Label>
+                                        <Input
+                                            value={lostReason}
+                                            onChange={e => setLostReason(e.target.value)}
+                                            placeholder="Ex: Preço alto, Sem interesse, etc."
+                                        />
+                                        <div className="flex gap-2 mt-2">
+                                            {['Preço', 'Concorrente', 'Sem Contato', 'Timing'].map(r => (
+                                                <Badge key={r} variant="outline" className="cursor-pointer hover:bg-muted" onClick={() => setLostReason(r)}>
+                                                    {r}
+                                                </Badge>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -659,6 +704,16 @@ export default function Pipeline() {
                             {actionType === 'close' && (
                                 <>
                                     <div className="space-y-2">
+                                        <Label>Valor do Contrato (R$)</Label>
+                                        <Input
+                                            type="number"
+                                            step="0.01"
+                                            placeholder="0,00"
+                                            value={dealValue}
+                                            onChange={e => setDealValue(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
                                         <Label>Data do Fechamento</Label>
                                         <Input
                                             type="datetime-local"
@@ -668,10 +723,18 @@ export default function Pipeline() {
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Responsável</Label>
-                                        <Input
+                                        <select
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                             value={responsible}
                                             onChange={e => setResponsible(e.target.value)}
-                                        />
+                                        >
+                                            <option value="" disabled>Selecione um responsável</option>
+                                            {allProfiles.map(profile => (
+                                                <option key={profile.id} value={profile.id}>
+                                                    {profile.full_name || profile.email || `Usuário (${profile.id.slice(0, 8)})`}
+                                                </option>
+                                            ))}
+                                        </select>
                                     </div>
                                 </>
                             )}
