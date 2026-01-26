@@ -6,6 +6,7 @@ import { Loader2, ArrowLeft, Calendar, CheckCircle, XCircle, Trash2, Download, P
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import Papa from 'papaparse'
 
@@ -355,6 +356,35 @@ export default function Pipeline() {
         }
     }
 
+    const handleInteractionChange = async (leadId: string, newStatus: string) => {
+        // Optimistic update
+        setLeads(prev => prev.map(l => {
+            if (l.id === leadId) {
+                return {
+                    ...l,
+                    original_data: { ...l.original_data, interaction_status: newStatus }
+                }
+            }
+            return l
+        }))
+
+        const lead = leads.find(l => l.id === leadId)
+        if (!lead) return
+
+        const updatedData = { ...lead.original_data, interaction_status: newStatus }
+
+        const { error } = await supabase
+            .from('leads')
+            .update({ original_data: updatedData })
+            .eq('id', leadId)
+
+        if (error) {
+            console.error('Error updating interaction status:', error)
+            // Revert/Refresh on error
+            fetchPipelineData()
+        }
+    }
+
 
 
     // Filter and Sort leads
@@ -607,7 +637,23 @@ export default function Pipeline() {
                                                             Editar
                                                         </Button>
 
-
+                                                        <div className="min-w-[140px]">
+                                                            <Select
+                                                                value={lead.original_data.interaction_status || 'none'}
+                                                                onValueChange={(val) => handleInteractionChange(lead.id, val)}
+                                                            >
+                                                                <SelectTrigger className="h-8 text-xs">
+                                                                    <SelectValue placeholder="Status" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="none">Sem Interação</SelectItem>
+                                                                    <SelectItem value="connection_requested">Conexão Solicitada</SelectItem>
+                                                                    <SelectItem value="connected">Conectado</SelectItem>
+                                                                    <SelectItem value="message_sent">Mensagem Enviada</SelectItem>
+                                                                    <SelectItem value="responded">Respondeu</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
 
                                                         <Button size="sm" variant="outline" onClick={() => handleOpenNotes(lead)} title="Ver Histórico">
                                                             <History className="h-4 w-4 mr-2" />
