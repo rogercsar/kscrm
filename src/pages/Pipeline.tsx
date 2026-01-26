@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { Panel, Lead, LeadStatus, LeadNote } from '@/types'
-import { Loader2, ArrowLeft, Calendar, CheckCircle, XCircle, Trash2, Download, Printer, Upload, Search, MessageCircle, History, Send } from 'lucide-react'
+import { Loader2, ArrowLeft, Calendar, CheckCircle, XCircle, Trash2, Download, Printer, Upload, Search, MessageCircle, History, Send, Undo } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent } from '@/components/ui/card'
@@ -585,17 +585,27 @@ export default function Pipeline() {
                                                         )}
 
                                                         {activeTab === 'interested' && (
-                                                            <Button
-                                                                size="sm"
-                                                                onClick={() => openActionDialog(lead, 'schedule')}
-                                                            >
-                                                                <Calendar className="mr-2 h-4 w-4" />
-                                                                Agendar Reunião
-                                                            </Button>
+                                                            <div className="flex gap-2 flex-wrap">
+                                                                <Button variant="outline" size="sm" onClick={() => simpleUpdateStatus(lead.id, 'cold')}>
+                                                                    <Undo className="mr-2 h-4 w-4" />
+                                                                    Voltar
+                                                                </Button>
+                                                                <Button
+                                                                    size="sm"
+                                                                    onClick={() => openActionDialog(lead, 'schedule')}
+                                                                >
+                                                                    <Calendar className="mr-2 h-4 w-4" />
+                                                                    Agendar Reunião
+                                                                </Button>
+                                                            </div>
                                                         )}
 
                                                         {activeTab === 'scheduled' && (
                                                             <div className="flex flex-wrap gap-2">
+                                                                <Button variant="outline" size="sm" onClick={() => simpleUpdateStatus(lead.id, 'interested')}>
+                                                                    <Undo className="mr-2 h-4 w-4" />
+                                                                    Voltar
+                                                                </Button>
                                                                 <Button variant="outline" size="sm" onClick={() => openActionDialog(lead, 'reschedule')}>
                                                                     Reagendar
                                                                 </Button>
