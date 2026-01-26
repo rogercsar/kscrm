@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { Panel, Lead, LeadStatus, LeadNote } from '@/types'
-import { Loader2, ArrowLeft, Calendar, CheckCircle, XCircle, Trash2, Download, Printer, Upload, Search, MessageCircle, History, Send, Undo } from 'lucide-react'
+import { Loader2, ArrowLeft, Calendar, CheckCircle, XCircle, Trash2, Download, Printer, Upload, Search, MessageCircle, History, Send, Undo, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent } from '@/components/ui/card'
@@ -41,6 +41,11 @@ export default function Pipeline() {
     const [closingDate, setClosingDate] = useState(new Date().toISOString().slice(0, 16)) // Default to now
     const [responsible, setResponsible] = useState('') // Default responsible
     const [dealValue, setDealValue] = useState('') // Value state
+
+    // Edit State
+    const [editDialogOpen, setEditDialogOpen] = useState(false)
+    const [editingLead, setEditingLead] = useState<Lead | null>(null)
+    const [editingData, setEditingData] = useState<Record<string, any>>({})
 
     const [allProfiles, setAllProfiles] = useState<any[]>([])
 
@@ -321,6 +326,37 @@ export default function Pipeline() {
         }
     }
 
+    const handleEditLead = (lead: Lead) => {
+        setEditingLead(lead)
+        setEditingData({ ...lead.original_data })
+        setEditDialogOpen(true)
+    }
+
+    const handleSaveEdit = async () => {
+        if (!editingLead) return
+        setLoading(true)
+
+        try {
+            const { error } = await supabase
+                .from('leads')
+                .update({ original_data: editingData })
+                .eq('id', editingLead.id)
+
+            if (error) throw error
+
+            setLeads(prev => prev.map(l => l.id === editingLead.id ? { ...l, original_data: editingData } : l))
+            setEditDialogOpen(false)
+            setEditingLead(null)
+        } catch (error) {
+            console.error('Error updating lead:', error)
+            alert('Erro ao atualizar lead')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+
+
     // Filter and Sort leads
     let filteredLeads = leads.filter(l => l.status === activeTab)
 
@@ -565,6 +601,13 @@ export default function Pipeline() {
                                                             }
                                                             return null
                                                         })()}
+
+                                                        <Button size="sm" variant="outline" onClick={() => handleEditLead(lead)} title="Editar Informações">
+                                                            <Pencil className="h-4 w-4 mr-2" />
+                                                            Editar
+                                                        </Button>
+
+
 
                                                         <Button size="sm" variant="outline" onClick={() => handleOpenNotes(lead)} title="Ver Histórico">
                                                             <History className="h-4 w-4 mr-2" />
@@ -875,6 +918,56 @@ export default function Pipeline() {
                                 </Button>
                             </div>
                         </div>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Edit Lead Dialog */}
+                <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+                    <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto print:hidden">
+                        <DialogHeader>
+                            <DialogTitle>Editar Lead</DialogTitle>
+                            <DialogDescription>
+                                Edite as informações do lead abaixo.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            {Object.entries(editingData).map(([key, value]) => (
+                                <div key={key} className="space-y-2">
+                                    <Label className="capitalize">{key}</Label>
+                                    <Input
+                                        value={value}
+                                        onChange={(e) => setEditingData(prev => ({ ...prev, [key]: e.target.value }))}
+                                    />
+                                </div>
+                            ))}
+                            <div className="border-t pt-4 mt-4">
+                                <Label className="text-muted-foreground mb-2 block">Adicionar Novo Campo</Label>
+                                <div className="flex gap-2">
+                                    <Input placeholder="Nome do campo (ex: Instagram)" id="newFieldKey" />
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        onClick={() => {
+                                            const keyInput = document.getElementById('newFieldKey') as HTMLInputElement
+                                            const key = keyInput.value.trim()
+                                            if (key && !editingData[key]) {
+                                                setEditingData(prev => ({ ...prev, [key]: '' }))
+                                                keyInput.value = ''
+                                            }
+                                        }}
+                                    >
+                                        Adicionar
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancelar</Button>
+                            <Button onClick={handleSaveEdit} disabled={loading}>
+                                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Salvar Alterações
+                            </Button>
+                        </DialogFooter>
                     </DialogContent>
                 </Dialog>
             </main>
