@@ -51,11 +51,14 @@ export function UserNav() {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Button variant="ghost" className="relative h-8 rounded-full px-2 flex items-center gap-2 w-auto">
                     <Avatar className="h-8 w-8">
                         <AvatarImage src={profile?.avatar_url || ''} alt={profile?.full_name || ''} />
                         <AvatarFallback>{initials}</AvatarFallback>
                     </Avatar>
+                    <span className="text-sm font-medium hidden sm:inline-block max-w-[150px] truncate">
+                        {profile?.full_name || 'Usuário'}
+                    </span>
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>

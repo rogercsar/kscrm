@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { Panel, Lead, LeadStatus, LeadNote } from '@/types'
-import { Loader2, ArrowLeft, Calendar, CheckCircle, XCircle, Trash2, Download, Printer, Upload, Search, MessageCircle, History, Send, Undo, Pencil } from 'lucide-react'
+import { Loader2, ArrowLeft, Calendar, CheckCircle, XCircle, Trash2, Download, Printer, Upload, Search, MessageCircle, History, Send, Undo, Pencil, MoreHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
 import Papa from 'papaparse'
 
@@ -481,7 +482,6 @@ export default function Pipeline() {
                             <Trash2 className="h-4 w-4 mr-2" />
                             <span className="hidden sm:inline">Remover</span>
                         </Button>
-                        <UserNav />
                     </div>
                 </div>
             </header>
@@ -604,38 +604,7 @@ export default function Pipeline() {
                                                         })()}
                                                     </div>
 
-                                                    <div className="flex justify-end w-full gap-2 pt-2 print:hidden flex-wrap">
-                                                        {/* WhatsApp Smart Button */}
-                                                        {(() => {
-                                                            const phoneKey = Object.keys(lead.original_data).find(k =>
-                                                                ['tele', 'cel', 'phone', 'whatsapp', 'whats'].some(term => k.toLowerCase().includes(term))
-                                                            )
-                                                            const phone = phoneKey ? lead.original_data[phoneKey] : null
-
-                                                            if (phone) {
-                                                                return (
-                                                                    <Button
-                                                                        size="sm"
-                                                                        variant="outline"
-                                                                        className="text-green-600 border-green-600 hover:bg-green-50"
-                                                                        onClick={() => {
-                                                                            const cleanPhone = String(phone).replace(/\D/g, '')
-                                                                            window.open(`https://wa.me/55${cleanPhone}`, '_blank')
-                                                                        }}
-                                                                        title="Chamar no WhatsApp"
-                                                                    >
-                                                                        <MessageCircle className="h-4 w-4 mr-2" />
-                                                                        WhatsApp
-                                                                    </Button>
-                                                                )
-                                                            }
-                                                            return null
-                                                        })()}
-
-                                                        <Button size="sm" variant="outline" onClick={() => handleEditLead(lead)} title="Editar Informações">
-                                                            <Pencil className="h-4 w-4 mr-2" />
-                                                            Editar
-                                                        </Button>
+                                                    <div className="flex justify-end w-full gap-2 pt-2 print:hidden flex-wrap items-center">
 
                                                         <div className="min-w-[140px]">
                                                             <Select
@@ -655,71 +624,97 @@ export default function Pipeline() {
                                                             </Select>
                                                         </div>
 
-                                                        <Button size="sm" variant="outline" onClick={() => handleOpenNotes(lead)} title="Ver Histórico">
-                                                            <History className="h-4 w-4 mr-2" />
-                                                            Histórico
-                                                        </Button>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                                                    <span className="sr-only">Abrir menu</span>
+                                                                    <MoreHorizontal className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                                                <DropdownMenuItem onClick={() => navigator.clipboard.writeText(lead.id)}>
+                                                                    Copiar ID
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuSeparator />
 
+                                                                {/* WhatsApp Smart Item */}
+                                                                {(() => {
+                                                                    const phoneKey = Object.keys(lead.original_data).find(k =>
+                                                                        ['tele', 'cel', 'phone', 'whatsapp', 'whats'].some(term => k.toLowerCase().includes(term))
+                                                                    )
+                                                                    const phone = phoneKey ? lead.original_data[phoneKey] : null
+                                                                    if (phone) {
+                                                                        return (
+                                                                            <DropdownMenuItem onClick={() => {
+                                                                                const cleanPhone = String(phone).replace(/\D/g, '')
+                                                                                window.open(`https://wa.me/55${cleanPhone}`, '_blank')
+                                                                            }}>
+                                                                                <MessageCircle className="mr-2 h-4 w-4" /> WhatsApp
+                                                                            </DropdownMenuItem>
+                                                                        )
+                                                                    }
+                                                                    return null
+                                                                })()}
 
-                                                        {activeTab === 'cold' && (
-                                                            <div className="flex gap-2 flex-wrap">
-                                                                <Button variant="destructive" size="sm" onClick={() => handleQuickLost(lead.id)}>
-                                                                    <XCircle className="h-4 w-4 mr-2" />
-                                                                    Desinteressado
-                                                                </Button>
-                                                                <Button size="sm" onClick={() => simpleUpdateStatus(lead.id, 'interested')}>
-                                                                    Marcar como Interessado
-                                                                </Button>
-                                                            </div>
-                                                        )}
+                                                                <DropdownMenuItem onClick={() => handleEditLead(lead)}>
+                                                                    <Pencil className="mr-2 h-4 w-4" /> Editar
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => handleOpenNotes(lead)}>
+                                                                    <History className="mr-2 h-4 w-4" /> Histórico
+                                                                </DropdownMenuItem>
 
-                                                        {activeTab === 'interested' && (
-                                                            <div className="flex gap-2 flex-wrap">
-                                                                <Button variant="outline" size="sm" onClick={() => simpleUpdateStatus(lead.id, 'cold')}>
-                                                                    <Undo className="mr-2 h-4 w-4" />
-                                                                    Voltar
-                                                                </Button>
-                                                                <Button
-                                                                    size="sm"
-                                                                    onClick={() => openActionDialog(lead, 'schedule')}
-                                                                >
-                                                                    <Calendar className="mr-2 h-4 w-4" />
-                                                                    Agendar Reunião
-                                                                </Button>
-                                                            </div>
-                                                        )}
+                                                                <DropdownMenuSeparator />
 
-                                                        {activeTab === 'scheduled' && (
-                                                            <div className="flex flex-wrap gap-2">
-                                                                <Button variant="outline" size="sm" onClick={() => simpleUpdateStatus(lead.id, 'interested')}>
-                                                                    <Undo className="mr-2 h-4 w-4" />
-                                                                    Voltar
-                                                                </Button>
-                                                                <Button variant="outline" size="sm" onClick={() => openActionDialog(lead, 'reschedule')}>
-                                                                    Reagendar
-                                                                </Button>
-                                                                <Button variant="destructive" size="sm" onClick={() => openActionDialog(lead, 'lost')}>
-                                                                    <XCircle className="mr-2 h-4 w-4" />
-                                                                    Perdido
-                                                                </Button>
-                                                                <Button size="sm" onClick={() => openActionDialog(lead, 'close')}>
-                                                                    <CheckCircle className="mr-2 h-4 w-4" />
-                                                                    Fechar Contrato
-                                                                </Button>
-                                                            </div>
-                                                        )}
+                                                                {/* State Transitions */}
+                                                                {activeTab === 'cold' && (
+                                                                    <>
+                                                                        <DropdownMenuItem onClick={() => simpleUpdateStatus(lead.id, 'interested')}>
+                                                                            <CheckCircle className="mr-2 h-4 w-4" /> Interessado
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuItem onClick={() => handleQuickLost(lead.id)} className="text-destructive">
+                                                                            <XCircle className="mr-2 h-4 w-4" /> Desinteressado
+                                                                        </DropdownMenuItem>
+                                                                    </>
+                                                                )}
 
-                                                        {activeTab === 'closed' && (
-                                                            <Button variant="outline" size="sm" onClick={() => openActionDialog(lead, 'reschedule')}>
-                                                                Voltar para Agendamento
-                                                            </Button>
-                                                        )}
+                                                                {activeTab === 'interested' && (
+                                                                    <>
+                                                                        <DropdownMenuItem onClick={() => openActionDialog(lead, 'schedule')}>
+                                                                            <Calendar className="mr-2 h-4 w-4" /> Agendar
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuItem onClick={() => simpleUpdateStatus(lead.id, 'cold')}>
+                                                                            <Undo className="mr-2 h-4 w-4" /> Voltar
+                                                                        </DropdownMenuItem>
+                                                                    </>
+                                                                )}
 
-                                                        {activeTab === 'lost' && (
-                                                            <Button variant="outline" size="sm" onClick={() => openActionDialog(lead, 'reschedule')}>
-                                                                Voltar para Agendamento
-                                                            </Button>
-                                                        )}
+                                                                {activeTab === 'scheduled' && (
+                                                                    <>
+                                                                        <DropdownMenuItem onClick={() => openActionDialog(lead, 'close')}>
+                                                                            <CheckCircle className="mr-2 h-4 w-4" /> Fechar Contrato
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuItem onClick={() => openActionDialog(lead, 'reschedule')}>
+                                                                            <Calendar className="mr-2 h-4 w-4" /> Reagendar
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuItem onClick={() => simpleUpdateStatus(lead.id, 'interested')}>
+                                                                            <Undo className="mr-2 h-4 w-4" /> Voltar
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuItem onClick={() => openActionDialog(lead, 'lost')} className="text-destructive">
+                                                                            <XCircle className="mr-2 h-4 w-4" /> Perdido
+                                                                        </DropdownMenuItem>
+                                                                    </>
+                                                                )}
+
+                                                                {(activeTab === 'closed' || activeTab === 'lost') && (
+                                                                    <DropdownMenuItem onClick={() => openActionDialog(lead, 'reschedule')}>
+                                                                        <Undo className="mr-2 h-4 w-4" /> Reativar / Agendar
+                                                                    </DropdownMenuItem>
+                                                                )}
+
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+
                                                     </div>
                                                 </CardContent>
                                             </Card>
@@ -754,10 +749,10 @@ export default function Pipeline() {
                             </ScrollArea>
                         </TabsContent>
                     </div>
-                </Tabs>
+                </Tabs >
 
                 {/* Action Dialog */}
-                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                < Dialog open={dialogOpen} onOpenChange={setDialogOpen} >
                     <DialogContent className="print:hidden">
                         <DialogHeader>
                             <DialogTitle>
@@ -868,10 +863,10 @@ export default function Pipeline() {
                             </Button>
                         </DialogFooter>
                     </DialogContent>
-                </Dialog>
+                </Dialog >
 
                 {/* Import Column Selection Dialog */}
-                <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+                < Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen} >
                     <DialogContent className="max-w-md">
                         <DialogHeader>
                             <DialogTitle>Selecione as Colunas</DialogTitle>
@@ -917,10 +912,10 @@ export default function Pipeline() {
                             </Button>
                         </DialogFooter>
                     </DialogContent>
-                </Dialog>
+                </Dialog >
 
                 {/* Notes / Timeline Dialog */}
-                <Dialog open={notesDialogOpen} onOpenChange={setNotesDialogOpen}>
+                < Dialog open={notesDialogOpen} onOpenChange={setNotesDialogOpen} >
                     <DialogContent className="sm:max-w-lg h-[80vh] flex flex-col">
                         <DialogHeader>
                             <DialogTitle className="flex items-center">
@@ -965,10 +960,10 @@ export default function Pipeline() {
                             </div>
                         </div>
                     </DialogContent>
-                </Dialog>
+                </Dialog >
 
                 {/* Edit Lead Dialog */}
-                <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+                < Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen} >
                     <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto print:hidden">
                         <DialogHeader>
                             <DialogTitle>Editar Lead</DialogTitle>
@@ -1015,8 +1010,8 @@ export default function Pipeline() {
                             </Button>
                         </DialogFooter>
                     </DialogContent>
-                </Dialog>
-            </main>
-        </div>
+                </Dialog >
+            </main >
+        </div >
     )
 }
