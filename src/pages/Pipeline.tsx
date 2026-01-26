@@ -467,12 +467,29 @@ export default function Pipeline() {
                                                 <CardContent className="p-4 flex flex-col gap-4">
                                                     <div className="w-full">
                                                         <div className="flex gap-2 mb-3 flex-wrap">
-                                                            {lead.selected_columns.map(col => (
-                                                                <div key={col} className="text-sm bg-background/50 px-2 py-1 rounded border print:bg-transparent">
-                                                                    <span className="font-semibold text-muted-foreground text-xs uppercase mr-1">{col}:</span>
-                                                                    <span className="break-all font-medium">{lead.original_data[col]}</span>
-                                                                </div>
-                                                            ))}
+                                                            {lead.selected_columns.map(col => {
+                                                                const content = lead.original_data[col]
+                                                                const isUrl = typeof content === 'string' && (content.startsWith('http://') || content.startsWith('https://'))
+
+                                                                return (
+                                                                    <div key={col} className="text-sm bg-background/50 px-2 py-1 rounded border print:bg-transparent max-w-full">
+                                                                        <span className="font-semibold text-muted-foreground text-xs uppercase mr-1">{col}:</span>
+                                                                        {isUrl ? (
+                                                                            <a
+                                                                                href={content}
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                                className="text-blue-600 hover:underline break-all"
+                                                                                onClick={(e) => e.stopPropagation()}
+                                                                            >
+                                                                                {content}
+                                                                            </a>
+                                                                        ) : (
+                                                                            <span className="break-all font-medium">{content}</span>
+                                                                        )}
+                                                                    </div>
+                                                                )
+                                                            })}
                                                         </div>
 
                                                         <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2 border-t pt-2">
