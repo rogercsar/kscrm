@@ -14,7 +14,7 @@ export default function Layout() {
 
     const handleSignOut = async () => {
         await supabase.auth.signOut()
-        navigate(0)
+        navigate('/login')
     }
 
     return (

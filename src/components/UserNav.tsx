@@ -41,7 +41,7 @@ export function UserNav() {
 
     const handleSignOut = async () => {
         await supabase.auth.signOut()
-        navigate(0) // Reload to trigger auth state change in App/Dashboard
+        navigate('/login') // Redirect to login page
     }
 
     const initials = profile?.full_name

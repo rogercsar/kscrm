@@ -13,7 +13,7 @@ export function Sidebar({ className }: SidebarProps) {
 
     const handleSignOut = async () => {
         await supabase.auth.signOut()
-        navigate(0)
+        navigate('/login')
     }
 
     return (
